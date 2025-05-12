@@ -1994,7 +1994,7 @@ class PaymentEntry(AccountsController):
 
 			# Re allocate amount to those references which have PR set (Higher priority)
 			for ref in self.references:
-				if not ref.payment_request:
+				if not (ref.reference_doctype and ref.reference_name and ref.payment_request):
 					continue
 
 				# fetch outstanding_amount of `Reference` (Payment Term) and `Payment Request` to allocate new amount
@@ -2045,7 +2045,7 @@ class PaymentEntry(AccountsController):
 					)
 			# Re allocate amount to those references which have no PR (Lower priority)
 			for ref in self.references:
-				if ref.payment_request:
+				if ref.payment_request or not (ref.reference_doctype and ref.reference_name):
 					continue
 
 				key = (ref.reference_doctype, ref.reference_name, ref.get("payment_term"))
@@ -2941,6 +2941,8 @@ def get_payment_entry(
 		party_account_currency if payment_type == "Receive" else bank.account_currency
 	)
 	pe.paid_to_account_currency = party_account_currency if payment_type == "Pay" else bank.account_currency
+	pe.paid_from_account_type = frappe.db.get_value("Account", pe.paid_from, "account_type")
+	pe.paid_to_account_type = frappe.db.get_value("Account", pe.paid_to, "account_type")
 	pe.paid_amount = paid_amount
 	pe.received_amount = received_amount
 	pe.letter_head = doc.get("letter_head")
